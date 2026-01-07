@@ -1,7 +1,7 @@
 # src/api.py
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, conlist
-from typing import List, Dict
+from pydantic import BaseModel, conlist
+from typing import Dict
 import logging
 from app.model import model
 
@@ -10,33 +10,26 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Digits Classification API", version="1.0.0")
 
+# Fixed for Pydantic v2: use min_length/max_length
 class DigitFeatures(BaseModel):
-    # fixed-length list of 64 floats
-    features: conlist(float, min_items=64, max_items=64) = Field(..., description="64 float features (8x8 image flattened)")
+    features: conlist(float, min_length=64, max_length=64)
 
-class PredictionResponse(BaseModel):
-    prediction: int
-    class_name: str
-    confidence: float = None
-    probabilities: Dict[str, float] = None
-
-@app.get("/", tags=["health"])
+@app.get("/")
 def root():
     return {"message": "Digits classification API", "docs": "/docs"}
 
-@app.get("/health", tags=["health"])
+@app.get("/health")
 def health():
     return {"status": "healthy"}
 
-@app.get("/model/info", tags=["model"])
-def get_model_info():
+@app.get("/model/info")
+def model_info():
     return model.get_model_info()
 
-@app.post("/predict", response_model=PredictionResponse, tags=["inference"])
+@app.post("/predict")
 def predict(payload: DigitFeatures):
     try:
-        result = model.predict(payload.features)
-        return result
+        return model.predict(payload.features)
     except Exception as e:
         logger.exception("Prediction failed")
         raise HTTPException(status_code=400, detail=str(e))

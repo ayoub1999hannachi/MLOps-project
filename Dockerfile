@@ -23,10 +23,16 @@ ENV PATH=/root/.local/bin:$PATH
 
 COPY app/ ./app/
 COPY src/ ./src/
+COPY tests/ ./tests/
 COPY requirements.txt .
 
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
+
+# Run tests before exposing API
+RUN echo "Running unit tests..." \
+    && pytest -v tests/ \
+    && echo "All tests passed!"
 
 EXPOSE 8000
 
