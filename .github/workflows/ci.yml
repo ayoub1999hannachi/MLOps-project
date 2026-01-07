@@ -18,7 +18,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: 3.10  # Valid version
+          # architecture can be removed, defaults to x64
 
       - name: Install dependencies
         run: |
