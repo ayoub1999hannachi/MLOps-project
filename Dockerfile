@@ -30,6 +30,6 @@ RUN python src/train.py
 
 # Expose FastAPI port
 EXPOSE 8000
-
+ 
 # Start API
 CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
