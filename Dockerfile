@@ -1,39 +1,35 @@
-# Dockerfile
-FROM python:3.10-slim as builder
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
-
+# Use Python slim image
 FROM python:3.10-slim
+
+# Set working directory
 WORKDIR /app
 
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# Environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
+# Install OS dependencies (gcc for scikit-learn)
+RUN apt-get update && apt-get install -y --no-install-recommends gcc g++ && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install globally
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy source code
 COPY app/ ./app/
 COPY src/ ./src/
 COPY tests/ ./tests/
-COPY requirements.txt .
 
+# Add non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Run tests before exposing API
-RUN echo "Running unit tests..." \
-    && pytest -v tests/ \
-    && echo "All tests passed!"
+# Train the model
+RUN python src/train.py
 
+# Expose FastAPI port
 EXPOSE 8000
 
-CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# Start API
+CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
